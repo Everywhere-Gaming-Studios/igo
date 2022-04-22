@@ -1,0 +1,44 @@
+
+compiler:
+  solc:
+    remappings:
+      - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.3.0'
+
+dependencies:
+    - OpenZeppelin/openzeppelin-contracts@4.3.0
+
+dotenv: .env
+
+
+wallets:
+  from_key: ${TEST_PRIVATE_KEY}
+
+
+igo_token_params:
+  name: 'Cosmic IGO'
+  symbol: 'COSMICIGO'
+
+
+networks:
+#  networks:
+#    mumbai_moralis:
+#      host: https://speedy-nodes-nyc.moralis.io/9974efbb9dfbbd6922950e4b/polygon/mumbai/archive
+
+
+
+  default: development
+  development:
+    cmd_settings:
+      mnemonic: brownie
+      default_balance: 100000000000000000000
+      unlock: <ACCOUNT ADDRESS HERE> # optionally add saved brownie account to Ganache
+      # (requires explicit transfer of eth to accounts[-1])
+
+    update_interval: 60
+    verify: False
+
+  ganache-local:
+    verify: False
+
+  avax-test:
+    verify: False
