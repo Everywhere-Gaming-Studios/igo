@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.10;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -16,7 +16,6 @@ contract IgoToken is ERC20 {
         require(msg.sender == owner, "owner only");
         _;
     }
-
 
     function mint(address to, uint256 amount) external ownerOnly returns(bool){
         _mint(to, amount);
