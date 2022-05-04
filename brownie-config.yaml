@@ -16,6 +16,8 @@ wallets:
 igo_token_params:
   name: 'Cosmic IGO'
   symbol: 'COSMICIGO'
+  price_numerator: 3
+  price_denominator: 10
   decimals: 1
   multisig_test_address: ${TEST_MULTISIG_ADDRESS}
 
