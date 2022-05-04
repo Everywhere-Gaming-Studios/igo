@@ -17,5 +17,5 @@ def main():
     igo_token = deploy_igo_token_factory()
     account = get_account()
     # Change ownership to multisig
-    igo_token.mint(account, 10*10**18, {"from": account})
+    igo_token.transferOwnership(config['igo_token_params']['multisig_test_address'], {"from": account})
 

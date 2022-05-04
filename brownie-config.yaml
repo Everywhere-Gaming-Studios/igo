@@ -9,7 +9,6 @@ dependencies:
 
 dotenv: .env
 
-
 wallets:
   from_key: ${TEST_PRIVATE_KEY}
 
@@ -17,6 +16,8 @@ wallets:
 igo_token_params:
   name: 'Cosmic IGO'
   symbol: 'COSMICIGO'
+  decimals: 1
+  multisig_test_address: ${TEST_MULTISIG_ADDRESS}
 
 
 
