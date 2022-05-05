@@ -56,3 +56,14 @@ def test_wallet_transfer(igo_token):
     mint_value = 10
 
     igo_token.mint(account, mint_value, {"from": account})
+
+
+def test_surpass_max_amount(igo_token):
+
+    mint_value = 10 * 10 ** 6 * 10 ** 18;
+
+    igo_token.mint(account, mint_value, {"from": account})
+
+    with brownie.reverts("Not enough tokens left to mint"):
+        second_mint_value = 3 * 10 ** 6 * 10 ** 18
+        igo_token.mint(account, second_mint_value, {"from": account})

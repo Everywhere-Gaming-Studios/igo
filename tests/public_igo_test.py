@@ -55,11 +55,8 @@ def test_investment_after_kyc(public_igo, igo_token, payment_coin):
 
     initial_coin_balance = payment_coin.balanceOf(investor.address, {"from": investor})
 
-    print(f"User now has {payment_coin.balanceOf(investor.address)} TDAI")
-
     # Allow public igo contract to transfer those coins to itself
     payment_coin.approve(public_igo.address, paid_amount)
-
 
     public_igo.buyTokens(paid_amount, {"from": investor})
 
@@ -84,5 +81,21 @@ def test_duplicated_kyc(public_igo):
     with brownie.reverts("User already performed KYC"):
         public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
 
+
+def test_surpassing_max_amount(public_igo, igo_token, payment_coin):
+    paid_amount = 10 * 10 ** 9 * 10 ** 18
+
+    public_igo.setIgoToken(igo_token.address, {"from": account})
+
+    public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
+
+    # Mint some test dai to the user
+    payment_coin.mint(investor, paid_amount, {"from": account})
+
+    # Allow public igo contract to transfer those coins to itself
+    payment_coin.approve(public_igo.address, paid_amount)
+
+    with brownie.reverts("Not enough tokens left to mint"):
+        public_igo.buyTokens(paid_amount, {"from": investor})
 
 

@@ -20,7 +20,9 @@ contract PublicIgo {
     uint8 private priceDenominator; // Price denoinator used to compute ratio between payment currency and igo token price
     mapping(address => PublicInvestor) private _kyc; // Map to store KYC information
     mapping(address => bool) private _kycPerformed; // Map for addresses with performed KYC
-    string[] blacklistedCountries; // List of blacklisted countries
+    string[] whitelistedCountries; // List of whitelisted countries
+    uint256 mintedByPublicIgo = 0;
+    uint256 MAXAMOUNT = 25 * 10**5 * 10**18; // Maximum amount of mintable tokens on pre sale 2.5 Millions
 
     event KycPerformed(address investorAddress, string email);
 
@@ -47,7 +49,7 @@ contract PublicIgo {
         coin = _paymentCoin;
     }
 
-    function setCoin (address _coin) external ownerOnly{
+    function setCoin (address _coin) external ownerOnly {
         coin = _coin;
     }
 
@@ -55,7 +57,7 @@ contract PublicIgo {
         igoToken = _igoToken;
     }
 
-    function transferOwnership(address _to) external ownerOnly returns(bool){
+    function transferOwnership(address _to) external ownerOnly returns(bool) {
         owner = _to;
         return true;
     }
@@ -72,12 +74,14 @@ contract PublicIgo {
         uint256 allowance = IERC20(coin).allowance(msg.sender, address(this));
         require(allowance >= _paidAmount, "Check the token allowance");
         uint256 _amountToMint = _computeTokenAmount(_paidAmount);
+        require(mintedByPublicIgo + _amountToMint <= MAXAMOUNT, "Not enough tokens left to mint");
         IERC20(coin).transferFrom(msg.sender, address(this), _paidAmount);
         _mintTokenToUser(msg.sender, _amountToMint);
     }
 
     function _mintTokenToUser(address _to, uint256 _amount) private {
         IERC20(igoToken).mint(_to, _amount);
+        mintedByPublicIgo += _amount;
     }
 
 

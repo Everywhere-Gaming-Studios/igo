@@ -33,7 +33,7 @@ def main():
     payment_coin.mint(account, 10 * 10**18, {"from": account})
 
     # Allow public igo to spend those DAI
-    payment_coin.approve(public_igo, 10* 10**18, {"from": account})
+    payment_coin.approve(public_igo, 10 * 10**18, {"from": account})
 
     # Perform KYC
     public_igo.performKyc(investor_kyc['email'], investor_kyc['country'])
