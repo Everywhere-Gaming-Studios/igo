@@ -27,6 +27,7 @@ contract PublicIgo {
     event KycPerformed(address investorAddress, string email);
 
 
+
     modifier hasKyc {
         require(_kycPerformed[msg.sender], "KYC necessary to invest");
         _;
@@ -69,7 +70,7 @@ contract PublicIgo {
         return true;
     }
 
-    function performKyc(string memory _email, string memory _country) external {
+    function performKyc(string calldata _email, string calldata _country) external {
         require(!_kycPerformed[msg.sender], "User already performed KYC");
         _kyc[msg.sender] = PublicInvestor({email: _email, country: _country});
         _kycPerformed[msg.sender] = true;

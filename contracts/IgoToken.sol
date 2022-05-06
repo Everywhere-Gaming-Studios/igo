@@ -9,6 +9,7 @@ contract IgoToken is ERC20 {
     address public owner;
     address public publicIgoContract;
     uint256 public MAXAMOUNT;
+    event IgoTokenMinted(uint256 _amount, address indexed _to);
 
 
     constructor(string memory _name, string memory _symbol, address _publicIgoContract, uint256 _maxAmount) ERC20(_name, _symbol) {
@@ -30,6 +31,7 @@ contract IgoToken is ERC20 {
     function mint(address _to, uint256 _amount) external canMint returns(bool){
         require(totalSupply() + _amount <= MAXAMOUNT, "Not enough tokens left to mint");
         _mint(_to, _amount);
+        emit IgoTokenMinted(_amount, _to);
         return true;
     }
 
