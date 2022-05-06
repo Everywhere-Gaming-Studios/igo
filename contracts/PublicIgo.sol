@@ -16,13 +16,13 @@ contract PublicIgo {
     address public owner; // Owner of the contract -> should be the multisig wallet as well
     address public coin; // Currency used to pay for IGO Tokens
     address public igoToken;
-    uint8 private priceNumerator; // Price numerator used to compute ratio between payment currency and igo token price
-    uint8 private priceDenominator; // Price denoinator used to compute ratio between payment currency and igo token price
+    uint8 public priceNumerator; // Price numerator used to compute ratio between payment currency and igo token price
+    uint8 public priceDenominator; // Price denoinator used to compute ratio between payment currency and igo token price
     mapping(address => PublicInvestor) private _kyc; // Map to store KYC information
     mapping(address => bool) private _kycPerformed; // Map for addresses with performed KYC
     string[] whitelistedCountries; // List of whitelisted countries
     uint256 mintedByPublicIgo = 0;
-    uint256 MAXAMOUNT = 25 * 10**5 * 10**18; // Maximum amount of mintable tokens on pre sale 2.5 Millions
+    uint256 MAXAMOUNT; // Maximum amount of mintable tokens on pre sale 2.5 Millions
 
     event KycPerformed(address investorAddress, string email);
 
@@ -42,11 +42,18 @@ contract PublicIgo {
         _;
     }
 
-    constructor(uint8 _priceNumerator, uint8 _priceDenominator, address _paymentCoin) {
+    constructor(uint8 _priceNumerator, uint8 _priceDenominator, address _paymentCoin, uint256 _maxAmount) {
         owner = msg.sender;
         priceNumerator = _priceNumerator;
         priceDenominator = _priceDenominator;
         coin = _paymentCoin;
+        MAXAMOUNT = _maxAmount;
+    }
+
+    function updateTokenPrice(uint8 _priceNumerator, uint8 _priceDenominator) external ownerOnly returns(bool){
+        priceNumerator = _priceNumerator;
+        priceDenominator = _priceDenominator;
+        return true;
     }
 
     function setCoin (address _coin) external ownerOnly {
@@ -70,13 +77,17 @@ contract PublicIgo {
     }
 
     function buyTokens(uint256 _paidAmount) external hasKyc igoTokenSet {
-        uint256 boughtAmount = _computeTokenAmount(_paidAmount);
-        uint256 allowance = IERC20(coin).allowance(msg.sender, address(this));
-        require(allowance >= _paidAmount, "Check the token allowance");
+        _checkAllowance(_paidAmount);
         uint256 _amountToMint = _computeTokenAmount(_paidAmount);
         require(mintedByPublicIgo + _amountToMint <= MAXAMOUNT, "Not enough tokens left to mint");
         IERC20(coin).transferFrom(msg.sender, address(this), _paidAmount);
         _mintTokenToUser(msg.sender, _amountToMint);
+    }
+
+
+    function _checkAllowance(uint256 _paidAmount) private view {
+        uint256 allowance = IERC20(coin).allowance(msg.sender, address(this));
+        require(allowance >= _paidAmount, "Check the token allowance");
     }
 
     function _mintTokenToUser(address _to, uint256 _amount) private {
@@ -85,7 +96,7 @@ contract PublicIgo {
     }
 
 
-    function _computeTokenAmount(uint256 paidAmount) private returns (uint256) {
+    function _computeTokenAmount(uint256 paidAmount) private view returns (uint256) {
         uint256 tokenAmount =  SafeMath.div(paidAmount * priceDenominator,priceNumerator, "Unable to divide integers");
         return tokenAmount;
     }

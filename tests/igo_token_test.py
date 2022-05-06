@@ -10,11 +10,11 @@ def payment_coin():
 
 @pytest.fixture
 def public_igo(payment_coin):
-    return PublicIgo.deploy(price_numerator, price_denominator, payment_coin.address, {"from": account})
+    return PublicIgo.deploy(price_numerator, price_denominator, payment_coin.address, config['igo_token_params']['max_presale_mint'], {"from": account})
 
 @pytest.fixture
 def igo_token(public_igo):
-    return IgoToken.deploy(config['igo_token_params']['name'], config['igo_token_params']['symbol'], public_igo.address, {"from": account})
+    return IgoToken.deploy(config['igo_token_params']['name'], config['igo_token_params']['symbol'], public_igo.address, config['igo_token_params']['max_amount'],{"from": account})
 
 
 def test_deployment(igo_token):

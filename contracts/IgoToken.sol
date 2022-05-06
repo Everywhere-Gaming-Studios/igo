@@ -8,12 +8,13 @@ contract IgoToken is ERC20 {
 
     address public owner;
     address public publicIgoContract;
-    uint256 public MAXAMOUNT = 125 * 10 ** 5 * 10 ** decimals();
+    uint256 public MAXAMOUNT;
 
 
-    constructor(string memory _name, string memory _symbol, address _publicIgoContract) ERC20(_name, _symbol) {
+    constructor(string memory _name, string memory _symbol, address _publicIgoContract, uint256 _maxAmount) ERC20(_name, _symbol) {
         owner = msg.sender;
         publicIgoContract = _publicIgoContract;
+        MAXAMOUNT = _maxAmount;
     }
 
     modifier ownerOnly {
