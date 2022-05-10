@@ -3,30 +3,13 @@ from brownie import accounts, PublicIgo, IgoToken, PaymentCoin, config
 from scripts.utils import get_account
 import math
 import pytest
-from utils import price_numerator, price_denominator, \
+from tests_config import price_numerator, price_denominator, \
     payment_coin_symbol, payment_coin_name, account, \
-    investor, investor_kyc, token_not_set_message
+    investor, investor_kyc, TOKEN_NOT_SET_MESSAGE, public_igo, payment_coin, igo_token, CHECK_ALLOWANCE_MESSAGE,\
+    KYC_NECESSARY_MESSAGE,USER_ALREADY_HAS_KYC_MESSAGE, NOT_ENOUGH_TOKENS_TO_MINT_MESSAGE
 
 
-@pytest.fixture
-def payment_coin():
-    return PaymentCoin.deploy(payment_coin_name, payment_coin_symbol, {"from": account})
-
-
-@pytest.fixture
-def public_igo(payment_coin):
-    return PublicIgo.deploy(price_numerator, price_denominator, payment_coin.address,
-                            config['igo_token_params']['max_presale_mint'], {"from": account})
-
-
-@pytest.fixture
-def igo_token(public_igo):
-    return IgoToken.deploy(config['igo_token_params']['name'], config['igo_token_params']['symbol'], public_igo,
-                           config['igo_token_params']['max_amount'],
-                           {"from": account})
-
-
-def test_investment_with_no_token_set(public_igo, payment_coin):
+def test_investment_with_no_token_set(public_igo, payment_coin, investor, account):
     paid_amount = 10
 
     public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
@@ -35,16 +18,16 @@ def test_investment_with_no_token_set(public_igo, payment_coin):
     payment_coin.mint(investor, paid_amount, {"from": account})
 
     # Allow public igo contract to transfer those coins to itself
-    payment_coin.approve(public_igo.address, paid_amount)
+    payment_coin.approve(public_igo.address, paid_amount, {"from": investor})
 
-    with brownie.reverts(token_not_set_message):
+    with brownie.reverts(TOKEN_NOT_SET_MESSAGE):
         public_igo.buyTokens(paid_amount, {"from": investor})
 
 
-def test_investment_after_kyc(public_igo, igo_token, payment_coin):
+def test_investment_after_kyc(public_igo, igo_token, payment_coin, investor, account):
     paid_amount = 10
 
-    public_igo.setIgoToken(igo_token.address, {"from": account})
+    public_igo.setIgoTokenAddress(igo_token.address, {"from": account})
 
     public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
 
@@ -54,7 +37,7 @@ def test_investment_after_kyc(public_igo, igo_token, payment_coin):
     initial_coin_balance = payment_coin.balanceOf(investor.address, {"from": investor})
 
     # Allow public igo contract to transfer those coins to itself
-    payment_coin.approve(public_igo.address, paid_amount)
+    payment_coin.approve(public_igo.address, paid_amount, {"from": investor})
 
     public_igo.buyTokens(paid_amount, {"from": investor})
 
@@ -64,44 +47,44 @@ def test_investment_after_kyc(public_igo, igo_token, payment_coin):
     assert (payment_coin.balanceOf(investor.address, {"from": investor}) == initial_coin_balance - paid_amount)
 
 
-def test_investment_without_allowance(public_igo, igo_token, payment_coin):
+def test_investment_without_allowance(public_igo, igo_token, payment_coin, investor, account):
     paid_amount = 10
 
-    public_igo.setIgoToken(igo_token.address, {"from": account})
+    public_igo.setIgoTokenAddress(igo_token.address, {"from": account})
 
     public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
 
     # Mint some test dai to the user
     payment_coin.mint(investor, paid_amount, {"from": account})
 
-    with brownie.reverts("Check the token allowance"):
+    with brownie.reverts(CHECK_ALLOWANCE_MESSAGE):
         public_igo.buyTokens(paid_amount, {"from": investor})
 
 
-def test_investment_without_kyc(public_igo):
+def test_investment_without_kyc(public_igo, investor):
     paid_amount = 10
 
-    with brownie.reverts("KYC necessary to invest"):
+    with brownie.reverts(KYC_NECESSARY_MESSAGE):
         public_igo.buyTokens(paid_amount, {"from": investor})
 
 
-def test_duplicated_kyc(public_igo):
+def test_duplicated_kyc(public_igo, investor, account):
     public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
 
-    with brownie.reverts("User already performed KYC"):
+    with brownie.reverts(USER_ALREADY_HAS_KYC_MESSAGE):
         public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
 
 
-def test_mint_max_amount(payment_coin):
+def test_mint_max_amount(payment_coin, investor, account):
     paid_amount = config['igo_token_params']['max_presale_mint']
 
-    public_igo = PublicIgo.deploy(1, 1, payment_coin.address, config['igo_token_params']['max_presale_mint'],
+    public_igo = PublicIgo.deploy(1, 1, payment_coin.address, config['igo_token_params']['max_presale_mint'], config['chainlink_oracle']['avax_testnet_price_feed_address'],
                                   {"from": account})
 
     igo_token = IgoToken.deploy(config['igo_token_params']['name'], config['igo_token_params']['symbol'], public_igo,config['igo_token_params']['max_amount'],
                                 {"from": account})
 
-    public_igo.setIgoToken(igo_token.address, {"from": account})
+    public_igo.setIgoTokenAddress(igo_token.address, {"from": account})
 
     public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
 
@@ -111,7 +94,7 @@ def test_mint_max_amount(payment_coin):
     initial_coin_balance = payment_coin.balanceOf(investor.address, {"from": investor})
 
     # Allow public igo contract to transfer those coins to itself
-    payment_coin.approve(public_igo.address, paid_amount)
+    payment_coin.approve(public_igo.address, paid_amount, {"from": investor})
 
     public_igo.buyTokens(paid_amount, {"from": investor})
 
@@ -121,16 +104,17 @@ def test_mint_max_amount(payment_coin):
     assert (payment_coin.balanceOf(investor.address, {"from": investor}) == initial_coin_balance - paid_amount)
 
 
-def test_surpassing_max_amount(payment_coin):
+def test_surpassing_max_amount(payment_coin, investor, account):
     paid_amount = config['igo_token_params']['max_presale_mint']
 
     public_igo = PublicIgo.deploy(1, 1, payment_coin.address, config['igo_token_params']['max_presale_mint'],
+                                  config['chainlink_oracle']['avax_testnet_price_feed_address'],
                                   {"from": account})
 
-    igo_token = IgoToken.deploy(config['igo_token_params']['name'], config['igo_token_params']['symbol'], public_igo,config['igo_token_params']['max_amount'],
+    igo_token = IgoToken.deploy(config['igo_token_params']['name'], config['igo_token_params']['symbol'], public_igo, config['igo_token_params']['max_amount'],
                                 {"from": account})
 
-    public_igo.setIgoToken(igo_token.address, {"from": account})
+    public_igo.setIgoTokenAddress(igo_token.address, {"from": account})
 
     public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
 
@@ -140,18 +124,18 @@ def test_surpassing_max_amount(payment_coin):
     initial_coin_balance = payment_coin.balanceOf(investor.address, {"from": investor})
 
     # Allow public igo contract to transfer those coins to itself
-    payment_coin.approve(public_igo.address, paid_amount + 100)
+    payment_coin.approve(public_igo.address, paid_amount + 100, {"from": investor})
 
     public_igo.buyTokens(paid_amount, {"from": investor})
 
-    with brownie.reverts("Not enough tokens left to mint"):
+    with brownie.reverts(NOT_ENOUGH_TOKENS_TO_MINT_MESSAGE):
         public_igo.buyTokens(1, {"from": investor})
 
 
-def test_token_price_change(igo_token, public_igo, payment_coin):
+def test_token_price_change(igo_token, public_igo, payment_coin, investor, account):
     paid_amount = 10
 
-    public_igo.setIgoToken(igo_token.address, {"from": account})
+    public_igo.setIgoTokenAddress(igo_token.address, {"from": account})
 
     public_igo.performKyc(investor_kyc['email'], investor_kyc['country'], {"from": investor})
 
@@ -161,7 +145,7 @@ def test_token_price_change(igo_token, public_igo, payment_coin):
     initial_coin_balance = payment_coin.balanceOf(investor.address, {"from": investor})
 
     # Allow public igo contract to transfer those coins to itself
-    payment_coin.approve(public_igo.address, paid_amount * 2)
+    payment_coin.approve(public_igo.address, paid_amount * 2, {"from": investor})
 
     public_igo.buyTokens(paid_amount, {"from": investor})
 
@@ -169,7 +153,7 @@ def test_token_price_change(igo_token, public_igo, payment_coin):
 
     updated_numerator = 5
 
-    public_igo.updateTokenPrice(updated_numerator,price_denominator, {"from": account})
+    public_igo.updateTokenPrice(updated_numerator, price_denominator, {"from": account})
 
     paid_amount_2 = 10
 

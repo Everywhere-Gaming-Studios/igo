@@ -24,7 +24,7 @@ contract IgoToken is ERC20 {
     }
 
     modifier canMint {
-        require((msg.sender == owner || msg.sender == publicIgoContract), "no mint privileges");
+        require((msg.sender == owner || msg.sender == publicIgoContract), "No mint privileges");
         _;
     }
 

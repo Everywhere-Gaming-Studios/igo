@@ -1,20 +1,11 @@
 import brownie
 from brownie import accounts, IgoToken, PublicIgo, PaymentCoin, config
 import pytest
-from utils import price_numerator, price_denominator,  payment_coin_symbol, payment_coin_name, account, investor, investor_kyc
+from tests_config import price_numerator, price_denominator,\
+    payment_coin_symbol, payment_coin_name, account,\
+    investor, investor_kyc, igo_token, public_igo, payment_coin, NO_MINT_PRIVILEGES_MESSAGE, NOT_ENOUGH_TOKENS_TO_MINT_MESSAGE
 
 
-@pytest.fixture
-def payment_coin():
-    return PaymentCoin.deploy(payment_coin_name, payment_coin_symbol, {"from": account})
-
-@pytest.fixture
-def public_igo(payment_coin):
-    return PublicIgo.deploy(price_numerator, price_denominator, payment_coin.address, config['igo_token_params']['max_presale_mint'], {"from": account})
-
-@pytest.fixture
-def igo_token(public_igo):
-    return IgoToken.deploy(config['igo_token_params']['name'], config['igo_token_params']['symbol'], public_igo.address, config['igo_token_params']['max_amount'],{"from": account})
 
 
 def test_deployment(igo_token):
@@ -22,7 +13,7 @@ def test_deployment(igo_token):
     assert (igo_token.symbol() == config['igo_token_params']['symbol'])
 
 
-def test_setters(igo_token):
+def test_setters(igo_token, account):
 
     mint_value = 1000
 
@@ -31,39 +22,37 @@ def test_setters(igo_token):
     assert (igo_token.balanceOf(account) == mint_value)
 
 
-def test_ownership_change(igo_token):
+def test_ownership_change(igo_token, account, investor):
 
-    second_owner = accounts[0]
-
-    igo_token.transferOwnership(second_owner, {"from": account})
+    igo_token.transferOwnership(investor, {"from": account})
 
     mint_value = 1000
 
     # Confirm deployer no longer able to mint
 
-    with brownie.reverts("no mint privileges"):
+    with brownie.reverts(NO_MINT_PRIVILEGES_MESSAGE):
         igo_token.mint(account, mint_value, {"from": account})
 
     # Confirm second owner is able to mint
 
-    igo_token.mint(account, mint_value, {"from": second_owner})
+    igo_token.mint(account, mint_value, {"from": investor})
 
     assert (igo_token.balanceOf(account) == mint_value)
 
 
-def test_wallet_transfer(igo_token):
+def test_wallet_transfer(igo_token, account):
 
     mint_value = 10
 
     igo_token.mint(account, mint_value, {"from": account})
 
 
-def test_surpass_max_amount(igo_token):
+def test_surpass_max_amount(igo_token, account):
 
-    mint_value = 10 * 10 ** 6 * 10 ** 18;
+    mint_value = 10 * 10 ** 6 * 10 ** 18
 
     igo_token.mint(account, mint_value, {"from": account})
 
-    with brownie.reverts("Not enough tokens left to mint"):
+    with brownie.reverts(NOT_ENOUGH_TOKENS_TO_MINT_MESSAGE):
         second_mint_value = 3 * 10 ** 6 * 10 ** 18
         igo_token.mint(account, second_mint_value, {"from": account})
