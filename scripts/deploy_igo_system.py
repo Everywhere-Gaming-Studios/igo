@@ -1,4 +1,4 @@
-from brownie import FlattenedIgoToken, PublicIgo, IgoToken, PaymentCoin, accounts, network, config
+from brownie import PublicIgo, IgoToken, PaymentCoin, accounts, network, config
 from scripts.utils import get_account, deploy_igo_token_factory, investor_kyc
 import os
 
@@ -11,16 +11,16 @@ def testnet_deploy():
     account = get_account()
 
     # Mint some TDAI to myself
-    payment_coin.mint(account, 100 * 10 ** 18, {"from": account})
+    payment_coin.mint(account, 1000 * 10 ** 6, {"from": account})
 
-    # Allow public igo to spend those DAI
-    payment_coin.approve(public_igo, 100 * 10 ** 18, {"from": account})
+    # # Allow public igo to spend those DAI
+    # payment_coin.approve(public_igo, 100 * 10 ** 18, {"from": account})
 
-    # Perform KYC
-    public_igo.performKyc(investor_kyc['email'], investor_kyc['country'])
+    # # Perform KYC
+    # public_igo.performKyc(investor_kyc['email'], investor_kyc['country'])
 
-    # Buy tokens from igo
-    public_igo.buyTokens(100 * 10 ** 18, {"from": account})
+    # # Buy tokens from igo
+    # public_igo.buyTokens(100 * 10 ** 18, {"from": account})
 
     # Change ownership to multisig
     igo_token.transferOwnership(config['igo_token_params']['multisig_test_address'], {"from": account})

@@ -1,11 +1,11 @@
-from brownie import FlattenedIgoToken, PublicIgo, IgoToken, PaymentCoin, accounts, network, config
+from brownie import PublicIgo, IgoToken, PaymentCoin, accounts, network, config
 import os
 
 DECIMALS = 8
 STARTING_PRICE = 200000000000
 LOCAL_BLOCKCHAIN_ENVIRONMENTS = ["development", "ganache-local"]
-payment_coin_name = "Test DAI"
-payment_coin_symbol = "TDAI"
+payment_coin_name = "USDC_TEST"
+payment_coin_symbol = "USDCT"
 investor_kyc = {'email': "renatomrocha93@gmail.com", 'country': 'Portugal'}
 
 DEPLOY_ENV = os.getenv('DEPLOY_ENV')

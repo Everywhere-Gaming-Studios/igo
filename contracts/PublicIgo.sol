@@ -20,18 +20,19 @@ contract PublicIgo {
     address public igoTokenAddress;
     uint8 public priceNumerator; // Price numerator used to compute ratio between payment currency and igo token price
     uint8 public priceDenominator; // Price denoinator used to compute ratio between payment currency and igo token price
+    uint8 PRICE_FEED_AVAX_DECIMALS = 8;
+    uint8 PAYMENT_COIN_DECIMALS = 6;
     mapping(address => PublicInvestor) private _kyc; // Map to store KYC information
     mapping(address => bool) private _kycPerformed; // Map for addresses with performed KYC
     string[] whitelistedCountries; // List of whitelisted countries
-    uint256 mintedByPublicIgo = 0;
-    uint256 MAXAMOUNT; // Maximum amount of mintable tokens on pre sale 2.5 Millions
+    uint256 public mintedByPublicIgo = 0;
+    uint256 public MAXAMOUNT; // Maximum amount of mintable tokens on pre sale 2.5 Millions
     IERC20 internal paymentCoin;
     IERC20 internal igoToken;
     AggregatorV3Interface public priceFeed;
 
-    uint public lastWithdrawValue;
-
     event KycPerformed(address investorAddress, string email);
+    event TokenPurchase(address investorAddress, string currency, uint256 amountPaid, uint256 amountMinted);
 
     modifier hasKyc {
         require(_kycPerformed[msg.sender], "KYC necessary to invest");
@@ -39,7 +40,7 @@ contract PublicIgo {
     }
 
     modifier ownerOnly {
-      require(msg.sender == owner);
+      require(msg.sender == owner, "Only the owner is allowed to perform this operation");
       _;
     }
 
@@ -86,28 +87,28 @@ contract PublicIgo {
         emit KycPerformed(msg.sender, _email);
     }
 
-    function buyTokens(uint256 _paidAmount) external hasKyc igoTokenSet {
+    function buyTokens(uint256 _paidAmount) external igoTokenSet {
         _checkAllowance(_paidAmount);
-        uint256 _amountToMint = _computeTokenAmount(_paidAmount);
+        uint256 _amountToMint = _computeTokenAmount(_paidAmount * 10**(18-PAYMENT_COIN_DECIMALS));
         require(mintedByPublicIgo + _amountToMint <= MAXAMOUNT, "Not enough tokens left to mint");
         paymentCoin.transferFrom(msg.sender, address(this), _paidAmount);
         _mintTokenToUser(msg.sender, _amountToMint);
+        emit TokenPurchase(msg.sender, "USD", _paidAmount, _amountToMint);
     }
 
-    function buyTokensWithNativeCurrency() external payable hasKyc {
+    function buyTokensWithNativeCurrency() external payable {
         uint256 _nativeCurrencyAmount = msg.value;
-        // check equivalence in payment_coin_units
-        // Oracle price feed call for AVAX price
-//        uint _avaxPrice = getLatestPrice();
-        uint256 _paidAmountInPaymentCoin = 1 * _nativeCurrencyAmount; // Example with 1$ static price
+        uint _avaxPrice = getLatestPrice();
+        uint256 _paidAmountInPaymentCoin = _avaxPrice * _nativeCurrencyAmount / 10**PRICE_FEED_AVAX_DECIMALS;
         uint256 _amountToMint = _computeTokenAmount(_paidAmountInPaymentCoin);
         require(mintedByPublicIgo + _amountToMint <= MAXAMOUNT, "Not enough tokens left to mint");
         _mintTokenToUser(msg.sender, _amountToMint);
+        emit TokenPurchase(msg.sender, "AVAX", _nativeCurrencyAmount, _amountToMint);
     }
 
 
     function _checkAllowance(uint256 _paidAmount) private view {
-        uint256 allowance = IERC20(paymentCoinAddress).allowance(msg.sender, address(this));
+        uint256 allowance = paymentCoin.allowance(msg.sender, address(this));
         require(allowance >= _paidAmount, "Check the token allowance");
     }
 
@@ -123,14 +124,18 @@ contract PublicIgo {
     }
 
 
-     function withdrawNativeCurrencyFunds() external ownerOnly returns (uint256) {
+     function withdrawNativeCurrencyFunds() external ownerOnly {
         uint256 _funds = address(this).balance;
         require(_funds > 0, "Contract has no native currency funds");
         (bool sent, ) = msg.sender.call{value: _funds}("");
         require(sent, "Failed to send ether");
-         lastWithdrawValue = _funds;
-         return _funds;
+     }
+
+    function withdrawCoin() external ownerOnly{
+        uint256 amount = paymentCoin.balanceOf(address(this));
+        paymentCoin.transfer(msg.sender, amount);
     }
+
 
      function getLatestPrice() public view returns (uint) {
         (

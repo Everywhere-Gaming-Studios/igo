@@ -27,7 +27,8 @@ igo_token_params:
   price_numerator: 3
   price_denominator: 10
   max_amount: 12500000000000000000000000
-  max_presale_mint: 2500000000000000000000000
+  max_presale_mint: 2500000000000000000000000 # Value with 6 decimals like USDC
+  max_presale_mint_in_usdc: 2500000000000
   multisig_test_address: ${TEST_MULTISIG_ADDRESS}
   multisig_mainnet_address: ${MAINNET_MULTISIG_ADDRESS}
 
